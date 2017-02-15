@@ -11,10 +11,6 @@ class Canvas {
         this.element = element;
         this.context = this.element.getContext('2d');
         this.scale = 1;
-
-        this.onResize = this.onResize.bind(this);
-
-        window.addEventListener('resize', this.onResize);
     }
 
     /**
@@ -23,21 +19,17 @@ class Canvas {
      * @param {Number} width
      * @param {Number} height
      */
-    setDimensions(width, height) {
-        if (this.element.width === width && this.element.height === height) {
+    setDimensions(width, height, scale) {
+        if (this.width === width && this.height === height && this.scale === scale) {
             return;
         }
 
+        this.scale = scale;
         this.element.width = width;
         this.element.height = height;
+        this.element.style.width = `${width}px`;
+        this.element.style.height = `${height}px`;
         this.context.imageSmoothingEnabled = false;
-        this.onResize();
-    }
-
-    paste(image) {
-        this.context.globalCompositeOperation = 'copy';
-        this.context.drawImage(image, 0, 0);
-        this.context.globalCompositeOperation = 'source-over';
     }
 
     /**
@@ -47,39 +39,17 @@ class Canvas {
         parent.appendChild(this.element);
     }
 
-    /**
-     * On resize
-     */
-    onResize() {
-        this.scale = this.getScale();
-
-        const width = Math.round(this.element.width * this.scale);
-        const height = Math.round(this.element.height * this.scale);
-
-        this.element.style.width = `${width}px`;
-        this.element.style.height = `${height}px`;
-    }
-
-    /**
-     * Get current scale
-     *
-     * @return {Number}
-     */
-    getScale(precision = 5) {
-        const { width, height } = this.element;
-        const { innerWidth, innerHeight } = window;
-        const scale = Math.min(innerWidth, innerHeight) / Math.max(width, height);
-
-        return Math.floor(scale * precision) / precision;
+    paste(image) {
+        this.context.globalCompositeOperation = 'copy';
+        this.context.drawImage(image, 0, 0);
+        this.context.globalCompositeOperation = 'source-over';
     }
 
     drawCircle(x, y, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
         const { context, scale } = this;
 
-        console.log(arguments);
-
         context.beginPath();
-        context.arc(x, y, radius / scale, 0, 2 * Math.PI, false);
+        context.arc(x * scale, y * scale, radius, 0, 2 * Math.PI, false);
         context.closePath();
 
         if (color) {
@@ -88,7 +58,7 @@ class Canvas {
         }
 
         if (border && borderColor) {
-            context.lineWidth = border / scale;
+            context.lineWidth = border;
             context.strokeStyle = borderColor;
             context.stroke();
         }
@@ -99,12 +69,12 @@ class Canvas {
         const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
-        context.lineWidth = width / scale;
+        context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0], last[1]);
-        points.forEach(point => context.lineTo(point[0], point[1]));
+        context.moveTo(last[0] * scale, last[1] * scale);
+        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
         context.stroke();
     }
 
@@ -113,12 +83,12 @@ class Canvas {
         const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
-        context.lineWidth = width / scale;
+        context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0], last[1]);
-        points.forEach(point => context.lineTo(point[0], point[1]));
+        context.moveTo(last[0] * scale, last[1] * scale);
+        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
         context.closePath();
         context.stroke();
     }

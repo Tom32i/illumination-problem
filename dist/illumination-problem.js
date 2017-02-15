@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -84,10 +84,6 @@ class Canvas {
         this.element = element;
         this.context = this.element.getContext('2d');
         this.scale = 1;
-
-        this.onResize = this.onResize.bind(this);
-
-        window.addEventListener('resize', this.onResize);
     }
 
     /**
@@ -96,21 +92,17 @@ class Canvas {
      * @param {Number} width
      * @param {Number} height
      */
-    setDimensions(width, height) {
-        if (this.element.width === width && this.element.height === height) {
+    setDimensions(width, height, scale) {
+        if (this.width === width && this.height === height && this.scale === scale) {
             return;
         }
 
+        this.scale = scale;
         this.element.width = width;
         this.element.height = height;
+        this.element.style.width = `${width}px`;
+        this.element.style.height = `${height}px`;
         this.context.imageSmoothingEnabled = false;
-        this.onResize();
-    }
-
-    paste(image) {
-        this.context.globalCompositeOperation = 'copy';
-        this.context.drawImage(image, 0, 0);
-        this.context.globalCompositeOperation = 'source-over';
     }
 
     /**
@@ -120,39 +112,17 @@ class Canvas {
         parent.appendChild(this.element);
     }
 
-    /**
-     * On resize
-     */
-    onResize() {
-        this.scale = this.getScale();
-
-        const width = Math.round(this.element.width * this.scale);
-        const height = Math.round(this.element.height * this.scale);
-
-        this.element.style.width = `${width}px`;
-        this.element.style.height = `${height}px`;
-    }
-
-    /**
-     * Get current scale
-     *
-     * @return {Number}
-     */
-    getScale(precision = 5) {
-        const { width, height } = this.element;
-        const { innerWidth, innerHeight } = window;
-        const scale = Math.min(innerWidth, innerHeight) / Math.max(width, height);
-
-        return Math.floor(scale * precision) / precision;
+    paste(image) {
+        this.context.globalCompositeOperation = 'copy';
+        this.context.drawImage(image, 0, 0);
+        this.context.globalCompositeOperation = 'source-over';
     }
 
     drawCircle(x, y, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
         const { context, scale } = this;
 
-        console.log(arguments);
-
         context.beginPath();
-        context.arc(x, y, radius / scale, 0, 2 * Math.PI, false);
+        context.arc(x * scale, y * scale, radius, 0, 2 * Math.PI, false);
         context.closePath();
 
         if (color) {
@@ -161,7 +131,7 @@ class Canvas {
         }
 
         if (border && borderColor) {
-            context.lineWidth = border / scale;
+            context.lineWidth = border;
             context.strokeStyle = borderColor;
             context.stroke();
         }
@@ -172,12 +142,12 @@ class Canvas {
         const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
-        context.lineWidth = width / scale;
+        context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0], last[1]);
-        points.forEach(point => context.lineTo(point[0], point[1]));
+        context.moveTo(last[0] * scale, last[1] * scale);
+        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
         context.stroke();
     }
 
@@ -186,12 +156,12 @@ class Canvas {
         const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
-        context.lineWidth = width / scale;
+        context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0], last[1]);
-        points.forEach(point => context.lineTo(point[0], point[1]));
+        context.moveTo(last[0] * scale, last[1] * scale);
+        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
         context.closePath();
         context.stroke();
     }
@@ -209,19 +179,12 @@ class Canvas {
  * Layout
  */
 class Layout {
-    constructor(size, source, observer, points = []) {
-        this.centerAndScale = this.centerAndScale.bind(this);
-
-        this.cols = this.getDifference(points.map(point => point[0]));
-        this.rows = this.getDifference(points.map(point => point[1]));
-        this.size = Math.max(this.cols, this.rows);
-        this.marginX = /*Math.floor*/(((this.size + 2) - this.cols) / 2);
-        this.marginY = /*Math.floor*/(((this.size + 2) - this.rows) / 2);
-        this.scale = size / (this.size + 2);
-        console.log(size, this);
-        this.points = points.map(this.centerAndScale.bind(this));
-        this.source = this.centerAndScale(source);
-        this.observer = this.centerAndScale(observer);
+    constructor(source, observer, points = []) {
+        this.points = points;
+        this.source = source;
+        this.observer = observer;
+        this.width = this.getDifference(points.map(point => point[0]));
+        this.height = this.getDifference(points.map(point => point[1]));
     }
 
     getDifference(values) {
@@ -230,13 +193,6 @@ class Layout {
 
         return max - min;
     }
-
-    centerAndScale(point) {
-        return [
-            (point[0] + this.marginX) * this.scale,
-            (point[1] + this.marginY) * this.scale,
-        ];
-    }
 }
 
 /* harmony default export */ __webpack_exports__["a"] = Layout;
@@ -244,6 +200,45 @@ class Layout {
 
 /***/ }),
 /* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+class Lazer {
+    constructor(x, y, angle) {
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.coeffDir = this.getCoeffDir(x, y, angle);
+        this.ordOrigin = this.getOrdOrigin(x, y, this.coeffDir);
+        this.points = [[x, y]];
+
+        for (let i = 1; i < 2; i++) {
+            const px = x + i * 1;
+            this.points.push([px, this.getY(px)]);
+        }
+    }
+
+    getCoeffDir(x, y, angle, dist = 100) {
+        const xb = x + dist * Math.cos(angle);
+        const yb = y + dist * Math.sin(angle);
+
+        return (yb - y) / (xb - x);
+    }
+
+    getOrdOrigin(x, y, m) {
+        return y - m * x;
+    }
+
+    getY(x) {
+        return this.coeffDir * x + this.ordOrigin;
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = Lazer;
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -257,66 +252,6 @@ class Layout {
         [2, 0],
     ]
 };
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Canvas__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Layout__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Lazer__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__layout_square__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__ = __webpack_require__(4);
-
-
-
-
-
-
-class App {
-    static get size() { return 1000; }
-
-    constructor() {
-        this.layout = new __WEBPACK_IMPORTED_MODULE_1__Layout__["a" /* default */](App.size, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].source, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].observer, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].points);
-        this.lazers = [
-            new __WEBPACK_IMPORTED_MODULE_2__Lazer__["a" /* default */](this.layout.source[0], this.layout.source[1], Math.PI),
-        ];
-        this.background = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
-        this.canvas = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
-
-        this.background.setDimensions(App.size, App.size);
-        this.canvas.setDimensions(App.size, App.size);
-        this.canvas.attach();
-
-        this.drawLazer = this.drawLazer.bind(this);
-
-        this.drawLayout();
-        this.draw();
-    }
-
-    draw() {
-        this.canvas.paste(this.background.element);
-        this.lazers.forEach(this.drawLazer);
-    }
-
-    drawLazer(lazer) {
-        const { points } = lazer;
-        this.canvas.drawLine(points, 5, 'orange');
-    }
-
-    drawLayout() {
-        const { source, observer, points } = this.layout;
-
-        this.background.drawShape(points);
-        this.background.drawCircle(source[0], source[1], 5, 'red');
-        this.background.drawCircle(observer[0], observer[1], 5, 'white', 1, 'grey');
-    }
-}
-
-/* harmony default export */ __webpack_exports__["default"] = new App();
 
 
 /***/ }),
@@ -363,22 +298,97 @@ class App {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-class Lazer {
-    constructor(x, y, angle) {
-        this.x = x;
-        this.y = y;
-        this.angle = angle;
-        this.points = [
-            [x, y],
-            [
-                x + 100 * Math.cos(this.angle),
-                y + 100 * Math.sin(this.angle),
-            ]
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Canvas__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Layout__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Lazer__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__layout_square__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__ = __webpack_require__(4);
+
+
+
+
+
+
+class App {
+    constructor() {
+        this.layout = new __WEBPACK_IMPORTED_MODULE_1__Layout__["a" /* default */](__WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].source, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].observer, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].points);
+        this.lazers = [new __WEBPACK_IMPORTED_MODULE_2__Lazer__["a" /* default */](this.layout.source[0], this.layout.source[1], Math.PI/5)];
+        this.background = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
+        this.canvas = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
+
+        this.background.setDimensions(this.layout.width, this.layout.height);
+        this.canvas.setDimensions(this.layout.width, this.layout.height);
+        this.canvas.attach();
+
+        this.drawLazer = this.drawLazer.bind(this);
+        this.onResize = this.onResize.bind(this);
+
+        window.addEventListener('resize', this.onResize);
+
+        this.onResize();
+        this.draw();
+    }
+
+    /**
+     * On resize
+     */
+    onResize() {
+        const scale = this.getScale();
+        const width = Math.round(this.layout.width * scale);
+        const height = Math.round(this.layout.height * scale);
+
+
+        this.background.setDimensions(width, height, scale);
+        this.canvas.setDimensions(width, height, scale);
+
+        this.drawLayout();
+    }
+
+    /**
+     * Get current scale
+     *
+     * @return {Number}
+     */
+    getScale(precision = 10) {
+        const { width, height } = this.layout;
+        const { innerWidth, innerHeight } = window;
+        const scaleX = (innerWidth * 0.9) / width;
+        const scaleY = (innerHeight * 0.9) / height;
+
+        return Math.floor(Math.min(scaleX, scaleY) * precision) / precision;
+    }
+
+    draw() {
+        this.canvas.paste(this.background.element);
+        this.lazers.forEach(this.drawLazer);
+    }
+
+    drawLazer(lazer) {
+        const { points } = lazer;
+        this.canvas.drawLine(points, 1, 'orange');
+        lazer.points.forEach(point => {
+            this.canvas.drawCircle(point[0], point[1], 3, 'blue');
+        });
+    }
+
+    drawLayout() {
+        const { source, observer, points } = this.layout;
+
+        this.background.drawShape(points);
+        this.background.drawCircle(source[0], source[1], 10, 'red');
+        this.background.drawCircle(observer[0], observer[1], 10, 'white', 1, 'grey');
+    }
+
+    centerAndScale(point) {
+        return [
+            (point[0] + this.marginX) * this.scale,
+            (point[1] + this.marginY) * this.scale,
         ];
     }
 }
 
-/* harmony default export */ __webpack_exports__["a"] = Lazer;
+/* harmony default export */ __webpack_exports__["default"] = new App();
 
 
 /***/ })
