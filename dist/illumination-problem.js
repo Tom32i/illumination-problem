@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 8);
+/******/ 	return __webpack_require__(__webpack_require__.s = 9);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -373,7 +373,7 @@ window.debug = new Debug();
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Segment__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Segment__ = __webpack_require__(8);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Point__ = __webpack_require__(0);
 
 
@@ -572,6 +572,63 @@ class Lazer {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Vector__ = __webpack_require__(1);
+
+
+/**
+ * Segment
+ */
+class Segment extends __WEBPACK_IMPORTED_MODULE_0__Vector__["a" /* default */] {
+    /**
+     * Create Segment from two points
+     *
+     * @param {Point} from
+     * @param {Point} to
+     *
+     * @return {Vector}
+     */
+    static createFromPoints(from, to) {
+        const slope = this.getSlope(from, to);
+        const origin = this.getOrigin(from, slope);
+
+        return new this(slope, origin, from, to);
+    }
+
+    /**
+     * @param {Point} point
+     * @param {Number} slope
+     * @param {Number} origin
+     */
+    constructor(slope, origin, from, to) {
+        super(slope, origin, from);
+
+        this.to = to;
+    }
+
+    contains(point) {
+        const { x, y } = point;
+
+        if (this.isVertical()) {
+            return this.roundTo(x) === this.roundTo(this.from.x)
+                && y >= Math.min(this.from.y, this.to.y)
+                && y <= Math.max(this.from.y, this.to.y);
+        }
+
+        return x >= Math.min(this.from.x, this.to.x)
+            && x <= Math.max(this.from.x, this.to.x)
+            && y >= Math.min(this.from.y, this.to.y)
+            && y <= Math.max(this.from.y, this.to.y);
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = Segment;
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Canvas__ = __webpack_require__(2);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Layout__ = __webpack_require__(4);
@@ -701,63 +758,6 @@ class App {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = new App();
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Vector__ = __webpack_require__(1);
-
-
-/**
- * Segment
- */
-class Segment extends __WEBPACK_IMPORTED_MODULE_0__Vector__["a" /* default */] {
-    /**
-     * Create Segment from two points
-     *
-     * @param {Point} from
-     * @param {Point} to
-     *
-     * @return {Vector}
-     */
-    static createFromPoints(from, to) {
-        const slope = this.getSlope(from, to);
-        const origin = this.getOrigin(from, slope);
-
-        return new this(slope, origin, from, to);
-    }
-
-    /**
-     * @param {Point} point
-     * @param {Number} slope
-     * @param {Number} origin
-     */
-    constructor(slope, origin, from, to) {
-        super(slope, origin, from);
-
-        this.to = to;
-    }
-
-    contains(point) {
-        const { x, y } = point;
-
-        if (this.isVertical()) {
-            return this.roundTo(x) === this.roundTo(this.from.x)
-                && y >= Math.min(this.from.y, this.to.y)
-                && y <= Math.max(this.from.y, this.to.y);
-        }
-
-        return x >= Math.min(this.from.x, this.to.x)
-            && x <= Math.max(this.from.x, this.to.x)
-            && y >= Math.min(this.from.y, this.to.y)
-            && y <= Math.max(this.from.y, this.to.y);
-    }
-}
-
-/* harmony default export */ __webpack_exports__["a"] = Segment;
 
 
 /***/ })
