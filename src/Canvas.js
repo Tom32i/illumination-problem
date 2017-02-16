@@ -45,11 +45,11 @@ class Canvas {
         this.context.globalCompositeOperation = 'source-over';
     }
 
-    drawCircle(x, y, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
+    drawCircle(center, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
         const { context, scale } = this;
 
         context.beginPath();
-        context.arc(x * scale, y * scale, radius, 0, 2 * Math.PI, false);
+        context.arc(center.x * scale, center.y * scale, radius, 0, 2 * Math.PI, false);
         context.closePath();
 
         if (color) {
@@ -64,17 +64,16 @@ class Canvas {
         }
     }
 
-    drawLine(points, width = 5, color = 'orange') {
+    drawLine(from, to, width = 5, color = 'orange') {
         const { context, scale } = this;
-        const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
         context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0] * scale, last[1] * scale);
-        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
+        context.moveTo(from.x * scale, from.y * scale);
+        context.lineTo(to.x * scale, to.y * scale);
         context.stroke();
     }
 
@@ -87,8 +86,8 @@ class Canvas {
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0] * scale, last[1] * scale);
-        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
+        context.moveTo(last.x * scale, last.y * scale);
+        points.forEach(point => context.lineTo(point.x * scale, point.y * scale));
         context.closePath();
         context.stroke();
     }

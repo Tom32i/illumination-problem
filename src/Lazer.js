@@ -1,31 +1,73 @@
-class Lazer {
-    constructor(x, y, angle) {
-        this.x = x;
-        this.y = y;
-        this.angle = angle;
-        this.coeffDir = this.getCoeffDir(x, y, angle);
-        this.ordOrigin = this.getOrdOrigin(x, y, this.coeffDir);
-        this.points = [[x, y]];
+import Vector from './Vector';
+import Point from './Point';
 
-        for (let i = 1; i < 2; i++) {
-            const px = x + i * 1;
-            this.points.push([px, this.getY(px)]);
+/**
+ * Lazer
+ */
+class Lazer {
+    /**
+     * @param {Point} origin
+     * @param {Number} angle
+     */
+    constructor(origin, angle) {
+        this.angle = angle;
+        this.origin = origin;
+        this.vector = Vector.createFromAngle(this.origin, angle);
+    }
+
+    /**
+     * Set lazer angle
+     *
+     * @param {Angle} angle
+     */
+    setAngle(angle) {
+        if (this.angle !== angle) {
+            this.angle = angle;
+            this.vector = Vector.createFromAngle(this.origin, angle);
         }
     }
 
-    getCoeffDir(x, y, angle, dist = 100) {
-        const xb = x + dist * Math.cos(angle);
-        const yb = y + dist * Math.sin(angle);
-
-        return (yb - y) / (xb - x);
+    getXDirection() {
+        return this.angle < Math.PI / 2
+            || this.angle > 3 * Math.PI / 2;
     }
 
-    getOrdOrigin(x, y, m) {
-        return y - m * x;
+    getYDirection() {
+        return this.angle > 0
+            && this.angle < Math.PI;
     }
 
-    getY(x) {
-        return this.coeffDir * x + this.ordOrigin;
+    contains(point) {
+        const { x, y } = point;
+        const { from } = this.vector;
+
+        return (this.getXDirection() ? x >= from.x : x <= from.x)
+            && (this.getYDirection() ? y >= from.y : y <= from.y);
+    }
+
+    /**
+     * Get closest intersection
+     *
+     * @param {Array} walls
+     *
+     * @return {Point}
+     */
+    getClosestIntersection(walls, canvas) {
+        return walls.reduce((intersection, segment, index) => {
+            const point = segment.getIntersect(this.vector, index === 16);
+
+            if (point) {
+                if (segment.contains(point)) {
+                    if (this.contains(point)) {
+                        if (!intersection || this.origin.getDistance(intersection) > this.origin.getDistance(point)) {
+                            return point;
+                        }
+                    }
+                }
+            }
+
+            return intersection;
+        }, null);
     }
 }
 

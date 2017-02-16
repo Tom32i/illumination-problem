@@ -63,11 +63,181 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 8);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/**
+ * Point
+ */
+class Point {
+    /**
+     * Create point from an array
+     *
+     * @param {Array} coordinates
+     *
+     * @return {Point}
+     */
+    static createFromArray(coordinates) {
+        return new Point(coordinates[0], coordinates[1]);
+    }
+
+    /**
+     * @param {Number} x
+     * @param {Number} y
+     */
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    getDistance(point) {
+        return Math.sqrt(Math.pow(this.x - point.x, 2) + Math.pow(this.y - point.y, 2));
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = Point;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Point__ = __webpack_require__(0);
+
+
+/**
+ * Vector
+ */
+class Vector {
+    /**
+     * Create Vector from an angle
+     *
+     * @param {Point} point
+     * @param {Number} angle
+     *
+     * @return {Vector}
+     */
+    static createFromAngle(point, angle) {
+        return this.createFromPoints(point, new __WEBPACK_IMPORTED_MODULE_0__Point__["a" /* default */](
+            point.x + Math.cos(angle),
+            point.y + Math.sin(angle)
+        ));
+    }
+
+    /**
+     * Create Vector from two points
+     *
+     * @param {Point} from
+     * @param {Point} to
+     *
+     * @return {Vector}
+     */
+    static createFromPoints(from, to) {
+        const slope = this.getSlope(from, to);
+        const origin = this.getOrigin(from, slope);
+
+        return new this(slope, origin, from);
+    }
+
+    /**
+     * Get slope
+     *
+     * @param {Point} from
+     * @param {Point} to
+     *
+     * @return {Number}
+     */
+    static getSlope(from, to) {
+        return (to.y - from.y) / (to.x - from.x);
+    }
+
+    /**
+     * Get origin
+     *
+     * @param {Point} point
+     * @param {Number} slope
+     *
+     * @return {Number}
+     */
+    static getOrigin(point, slope) {
+        return point.y - slope * point.x;
+    }
+
+    /**
+     * @param {Number} slope
+     * @param {Number} origin
+     * @param {Point} from
+     */
+    constructor(slope, origin, from) {
+        this.slope = slope;
+        this.origin = origin;
+        this.from = from;
+    }
+
+    /**
+     * Get Y position for this given X
+     *
+     * @param {Number} x
+     *
+     * @return {Number}
+     */
+    getY(x) {
+        return this.slope * x + this.origin;
+    }
+
+    /**
+     * Is the vector vertical?
+     *
+     * @return {Boolean}
+     */
+    isVertical() {
+        return Math.abs(this.slope) === Infinity;
+    }
+
+    roundTo(value, precision = 5) {
+        const factor = Math.pow(10, precision);
+
+        return Math.round(value * factor) / factor;
+    }
+
+    /**
+     * Get intersection point with the given vector
+     *
+     * @param {Vector} vector
+     *
+     * @return {Array|null}
+     */
+    getIntersect(vector) {
+        if (this.isVertical()) {
+            if (vector.isVertical()) {
+                return null;
+            }
+
+            return new __WEBPACK_IMPORTED_MODULE_0__Point__["a" /* default */](this.from.x, vector.getY(this.from.x));
+        }
+
+        const x = (vector.origin - this.origin) / (this.slope - vector.slope);
+        const y = this.getY(x);
+
+        if (this.roundTo(y) !== this.roundTo(vector.getY(x))) {
+            return null; // Parallel
+        }
+
+        return new __WEBPACK_IMPORTED_MODULE_0__Point__["a" /* default */](x, y);
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = Vector;
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -118,11 +288,11 @@ class Canvas {
         this.context.globalCompositeOperation = 'source-over';
     }
 
-    drawCircle(x, y, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
+    drawCircle(center, radius = 5, color = 'red', border = 0, borderColor = 'grey') {
         const { context, scale } = this;
 
         context.beginPath();
-        context.arc(x * scale, y * scale, radius, 0, 2 * Math.PI, false);
+        context.arc(center.x * scale, center.y * scale, radius, 0, 2 * Math.PI, false);
         context.closePath();
 
         if (color) {
@@ -137,17 +307,16 @@ class Canvas {
         }
     }
 
-    drawLine(points, width = 5, color = 'orange') {
+    drawLine(from, to, width = 5, color = 'orange') {
         const { context, scale } = this;
-        const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
         context.lineWidth = width;
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0] * scale, last[1] * scale);
-        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
+        context.moveTo(from.x * scale, from.y * scale);
+        context.lineTo(to.x * scale, to.y * scale);
         context.stroke();
     }
 
@@ -160,8 +329,8 @@ class Canvas {
         context.strokeStyle = color;
 
         context.beginPath();
-        context.moveTo(last[0] * scale, last[1] * scale);
-        points.forEach(point => context.lineTo(point[0] * scale, point[1] * scale));
+        context.moveTo(last.x * scale, last.y * scale);
+        points.forEach(point => context.lineTo(point.x * scale, point.y * scale));
         context.closePath();
         context.stroke();
     }
@@ -171,23 +340,84 @@ class Canvas {
 
 
 /***/ }),
-/* 1 */
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+class Debug {
+    constructor(element = document.createElement('p')) {
+        this.element = element;
+
+        this.attach();
+    }
+
+    /**
+     * Attach to DOM
+     */
+    attach(parent = document.body) {
+        parent.appendChild(this.element);
+    }
+
+    log(value) {
+        this.element.innerText = value;
+    }
+}
+
+window.debug = new Debug();
+
+/* unused harmony default export */ var _unused_webpack_default_export = window.debug;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Segment__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Point__ = __webpack_require__(0);
+
+
+
 /**
  * Layout
  */
 class Layout {
-    constructor(source, observer, points = []) {
-        this.points = points;
-        this.source = source;
-        this.observer = observer;
-        this.width = this.getDifference(points.map(point => point[0]));
-        this.height = this.getDifference(points.map(point => point[1]));
+    /**
+     * Vectorise the list of points
+     *
+     * @param {Point} point
+     * @param {Number} index
+     * @param {Array} points
+     *
+     * @return {Segment}
+     */
+    static vectorise(point, index, points) {
+        const previous = index === 0 ? points.length -1 : index - 1;
+
+        return __WEBPACK_IMPORTED_MODULE_0__Segment__["a" /* default */].createFromPoints(points[previous], point);
     }
 
-    getDifference(values) {
+    /**@param {Point} source
+     * @param {Point} observer
+     * @param {Array} points
+     */
+    constructor(source, observer, points = []) {
+        this.source = __WEBPACK_IMPORTED_MODULE_1__Point__["a" /* default */].createFromArray(source);
+        this.observer = __WEBPACK_IMPORTED_MODULE_1__Point__["a" /* default */].createFromArray(observer);
+        this.points = points.map(__WEBPACK_IMPORTED_MODULE_1__Point__["a" /* default */].createFromArray);
+        this.walls = this.points.map(Layout.vectorise);
+        this.width = this.getMaxDistance(this.points.map(point => point.x));
+        this.height = this.getMaxDistance(this.points.map(point => point.y));
+    }
+
+    /**
+     * Get maximun distance between values
+     *
+     * @param {Array} values
+     *
+     * @return {Number}
+     */
+    getMaxDistance(values) {
         const min = values.reduce((result, value) => Math.min(result, value), 0);
         const max = values.reduce((result, value) => Math.max(result, value), 0);
 
@@ -199,38 +429,82 @@ class Layout {
 
 
 /***/ }),
-/* 2 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-class Lazer {
-    constructor(x, y, angle) {
-        this.x = x;
-        this.y = y;
-        this.angle = angle;
-        this.coeffDir = this.getCoeffDir(x, y, angle);
-        this.ordOrigin = this.getOrdOrigin(x, y, this.coeffDir);
-        this.points = [[x, y]];
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Vector__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Point__ = __webpack_require__(0);
 
-        for (let i = 1; i < 2; i++) {
-            const px = x + i * 1;
-            this.points.push([px, this.getY(px)]);
+
+
+/**
+ * Lazer
+ */
+class Lazer {
+    /**
+     * @param {Point} origin
+     * @param {Number} angle
+     */
+    constructor(origin, angle) {
+        this.angle = angle;
+        this.origin = origin;
+        this.vector = __WEBPACK_IMPORTED_MODULE_0__Vector__["a" /* default */].createFromAngle(this.origin, angle);
+    }
+
+    /**
+     * Set lazer angle
+     *
+     * @param {Angle} angle
+     */
+    setAngle(angle) {
+        if (this.angle !== angle) {
+            this.angle = angle;
+            this.vector = __WEBPACK_IMPORTED_MODULE_0__Vector__["a" /* default */].createFromAngle(this.origin, angle);
         }
     }
 
-    getCoeffDir(x, y, angle, dist = 100) {
-        const xb = x + dist * Math.cos(angle);
-        const yb = y + dist * Math.sin(angle);
-
-        return (yb - y) / (xb - x);
+    getXDirection() {
+        return this.angle < Math.PI / 2
+            || this.angle > 3 * Math.PI / 2;
     }
 
-    getOrdOrigin(x, y, m) {
-        return y - m * x;
+    getYDirection() {
+        return this.angle > 0
+            && this.angle < Math.PI;
     }
 
-    getY(x) {
-        return this.coeffDir * x + this.ordOrigin;
+    contains(point) {
+        const { x, y } = point;
+        const { from } = this.vector;
+
+        return (this.getXDirection() ? x >= from.x : x <= from.x)
+            && (this.getYDirection() ? y >= from.y : y <= from.y);
+    }
+
+    /**
+     * Get closest intersection
+     *
+     * @param {Array} walls
+     *
+     * @return {Point}
+     */
+    getClosestIntersection(walls, canvas) {
+        return walls.reduce((intersection, segment, index) => {
+            const point = segment.getIntersect(this.vector, index === 16);
+
+            if (point) {
+                if (segment.contains(point)) {
+                    if (this.contains(point)) {
+                        if (!intersection || this.origin.getDistance(intersection) > this.origin.getDistance(point)) {
+                            return point;
+                        }
+                    }
+                }
+            }
+
+            return intersection;
+        }, null);
     }
 }
 
@@ -238,7 +512,7 @@ class Lazer {
 
 
 /***/ }),
-/* 3 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -255,7 +529,7 @@ class Lazer {
 
 
 /***/ }),
-/* 4 */
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -294,16 +568,22 @@ class Lazer {
 
 
 /***/ }),
-/* 5 */
+/* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Canvas__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Layout__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Lazer__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__layout_square__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Canvas__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__Layout__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__Lazer__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__Vector__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__Point__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__Debug__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__layout_square__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__layout_tokarsky__ = __webpack_require__(7);
+
+
+
 
 
 
@@ -312,22 +592,34 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 class App {
     constructor() {
-        this.layout = new __WEBPACK_IMPORTED_MODULE_1__Layout__["a" /* default */](__WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].source, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].observer, __WEBPACK_IMPORTED_MODULE_4__layout_tokarsky__["a" /* default */].points);
-        this.lazers = [new __WEBPACK_IMPORTED_MODULE_2__Lazer__["a" /* default */](this.layout.source[0], this.layout.source[1], Math.PI/5)];
+        this.layout = new __WEBPACK_IMPORTED_MODULE_1__Layout__["a" /* default */](__WEBPACK_IMPORTED_MODULE_7__layout_tokarsky__["a" /* default */].source, __WEBPACK_IMPORTED_MODULE_7__layout_tokarsky__["a" /* default */].observer, __WEBPACK_IMPORTED_MODULE_7__layout_tokarsky__["a" /* default */].points);
+        this.lazers = [new __WEBPACK_IMPORTED_MODULE_2__Lazer__["a" /* default */](this.layout.source, 0)];
         this.background = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
         this.canvas = new __WEBPACK_IMPORTED_MODULE_0__Canvas__["a" /* default */]();
+        this.frame = null;
 
         this.background.setDimensions(this.layout.width, this.layout.height);
         this.canvas.setDimensions(this.layout.width, this.layout.height);
         this.canvas.attach();
 
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
         this.drawLazer = this.drawLazer.bind(this);
         this.onResize = this.onResize.bind(this);
 
         window.addEventListener('resize', this.onResize);
+        window.addEventListener('error', this.stop);
+        window.addEventListener('keypress', this.update);
 
         this.onResize();
-        this.draw();
+        this.update();
+    }
+
+    /**
+     * Stop animation
+     */
+    stop() {
+        this.frame = cancelAnimationFrame(this.frame);
     }
 
     /**
@@ -343,6 +635,7 @@ class App {
         this.canvas.setDimensions(width, height, scale);
 
         this.drawLayout();
+        this.draw();
     }
 
     /**
@@ -359,36 +652,112 @@ class App {
         return Math.floor(Math.min(scaleX, scaleY) * precision) / precision;
     }
 
+    /**
+     * Update the simulation
+     */
+    update() {
+        this.frame = requestAnimationFrame(this.update);
+
+        const lazer = this.lazers[0];
+
+        lazer.setAngle((lazer.angle + Math.PI / 1000) % (2 * Math.PI));
+
+        this.draw();
+        //this.stop();
+    }
+
+    /**
+     * Draw the scene
+     */
     draw() {
         this.canvas.paste(this.background.element);
         this.lazers.forEach(this.drawLazer);
     }
 
+    /**
+     * Draw a lazer
+     *
+     * @param {Lazer} lazer
+     */
     drawLazer(lazer) {
-        const { points } = lazer;
-        this.canvas.drawLine(points, 1, 'orange');
-        lazer.points.forEach(point => {
-            this.canvas.drawCircle(point[0], point[1], 3, 'blue');
-        });
+        const point = lazer.getClosestIntersection(this.layout.walls);
+
+        if (point) {
+            this.canvas.drawLine(lazer.origin, point, 1, 'orange');
+            this.canvas.drawCircle(point, 3, 'red');
+        }
     }
 
+    /**
+     * Draw the layout
+     */
     drawLayout() {
         const { source, observer, points } = this.layout;
 
         this.background.drawShape(points);
-        this.background.drawCircle(source[0], source[1], 10, 'red');
-        this.background.drawCircle(observer[0], observer[1], 10, 'white', 1, 'grey');
-    }
-
-    centerAndScale(point) {
-        return [
-            (point[0] + this.marginX) * this.scale,
-            (point[1] + this.marginY) * this.scale,
-        ];
+        this.background.drawCircle(source, 10, 'red');
+        this.background.drawCircle(observer, 10, 'white', 1, 'grey');
     }
 }
 
 /* harmony default export */ __webpack_exports__["default"] = new App();
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__Vector__ = __webpack_require__(1);
+
+
+/**
+ * Segment
+ */
+class Segment extends __WEBPACK_IMPORTED_MODULE_0__Vector__["a" /* default */] {
+    /**
+     * Create Segment from two points
+     *
+     * @param {Point} from
+     * @param {Point} to
+     *
+     * @return {Vector}
+     */
+    static createFromPoints(from, to) {
+        const slope = this.getSlope(from, to);
+        const origin = this.getOrigin(from, slope);
+
+        return new this(slope, origin, from, to);
+    }
+
+    /**
+     * @param {Point} point
+     * @param {Number} slope
+     * @param {Number} origin
+     */
+    constructor(slope, origin, from, to) {
+        super(slope, origin, from);
+
+        this.to = to;
+    }
+
+    contains(point) {
+        const { x, y } = point;
+
+        if (this.isVertical()) {
+            return this.roundTo(x) === this.roundTo(this.from.x)
+                && y >= Math.min(this.from.y, this.to.y)
+                && y <= Math.max(this.from.y, this.to.y);
+        }
+
+        return x >= Math.min(this.from.x, this.to.x)
+            && x <= Math.max(this.from.x, this.to.x)
+            && y >= Math.min(this.from.y, this.to.y)
+            && y <= Math.max(this.from.y, this.to.y);
+    }
+}
+
+/* harmony default export */ __webpack_exports__["a"] = Segment;
 
 
 /***/ })
