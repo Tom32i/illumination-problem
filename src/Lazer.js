@@ -5,7 +5,7 @@ import Point from './Point';
  * Lazer
  */
 class Lazer {
-    static get maxDepth() { return 2; }
+    static get maxDepth() { return 3; }
 
     /**
      * @param {Point} origin
@@ -13,7 +13,7 @@ class Lazer {
      */
     constructor(origin, angle, depth = 0) {
         this.origin = origin;
-        this.angle = angle;
+        this.angle = angle % Math.twoPI;//angle < 0 ? (angle % Math.twoPI) + Math.twoPI : angle % Math.twoPI;
         this.depth = depth;
         this.end = null;
         this.vector = null;
@@ -29,6 +29,7 @@ class Lazer {
     setAngle(angle) {
         if (this.angle !== angle) {
             this.angle = angle;
+            this.reflexion = null;
             this.changed = true;
         }
     }
@@ -55,18 +56,34 @@ class Lazer {
     }
 
     createReflexion(segment) {
-        dotMultiply = (vA, vB) => [];
-        multiply = (vA, vB) => [];
+        const dotMultiply = (vA, vB) => vA[0] * vB[0] + vA[1] * vB[1];
+        const add = (vA, vB) => [vA[0] + vB[0], vA[1] + vB[1]];
+        const substract = (vA, vB) => [vA[0] - vB[0], vA[1] - vB[1]];
+        const multiply = (vector, factor) => vector.map(value => value * factor);
 
-        const incident = [this.end.x - this.from.x, this.end.y - this.from.y];
-        const surface = [this.end.x, this.end.y];
-        const normal = [this.end.x, this.end.y];
+        const incident = this.vector.getVector();
+        const normal = segment.getNormal();
+        const reflect = substract(incident, multiply(normal, 2 * dotMultiply(incident, normal)));
+        //const reflectVector = Vector.createFromPoints(new Point(0, 0), new Point(reflect[0], reflect[1]));
+        let angle = Math.atan(reflect[1], reflect[0]);
 
-        const reflect = N.multiply(2 * (incident.dotMultiply(N))) - incident;
+        if (reflect[0] < 0 && reflect[1] < 0) {
+            angle = Math.PI - angle;
+        }
 
-        const angle = - this.angle;//segment.reflect(this);
+        console.log('Lazer', this);
+        console.log('surface', segment);
+        console.log('incident', incident);
+        console.log('normal', normal);
+        console.log('reflect', reflect);
+        //console.log('reflectVector', reflectVector);
+        console.log('angle', angle);
 
         return new Lazer(this.end, angle, this.depth + 1);
+
+        /*const angle = - this.angle;//segment.reflect(this);
+
+        return new Lazer(this.end, angle, this.depth + 1);*/
     }
 
     /**

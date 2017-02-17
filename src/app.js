@@ -4,6 +4,8 @@ import Layout from './Layout';
 import Debug from './Debug';
 import tokarsky from './layout/tokarsky';
 
+Math.twoPI = Math.PI * 2;
+
 class App {
     constructor() {
         this.layout = new Layout(tokarsky.source, tokarsky.observer, tokarsky.points);
@@ -24,12 +26,12 @@ class App {
         window.addEventListener('resize', this.onResize);
         window.addEventListener('error', this.stop);
 
-        /*const number = 24;
+        const number = 1;
 
         for (let angle = 0; angle < number; angle++) {
-            this.world.addLazer(angle * 2 * Math.PI / number);
-        }*/
-        this.world.addLazer(Math.PI / 12);
+            this.world.addLazer(Math.PI / 11 + angle * Math.twoPI / number);
+        }
+        //this.world.addLazer(Math.PI / 12);
 
         this.onResize();
         this.update();
@@ -94,14 +96,24 @@ class App {
      *
      * @param {Lazer} lazer
      */
-    drawLazer(lazer, index) {
+    drawLazer(lazer) {
         if (!lazer.end) {
-            console.log(index, lazer);
+            console.log(lazer);
             throw new Error();
         }
 
+        console.log('drawLazer', lazer);
+
         this.canvas.drawLine(lazer.origin, lazer.end, 1, 'orange');
         this.canvas.drawCircle(lazer.end, 3, 'red');
+
+        if (lazer.reflexion) {
+            this.drawLazer(lazer.reflexion);
+        }
+
+        if (lazer.depth === 2) {
+            this.stop();
+        }
     }
 
     /**

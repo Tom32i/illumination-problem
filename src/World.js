@@ -28,14 +28,21 @@ class World {
 
         const { point, segment } = this.getClosestIntersection(lazer);
 
+        if (!point || !segment) {
+            return true;
+        }
+
         lazer.end = point;
 
         if (lazer.depth < Lazer.maxDepth) {
             lazer.reflexion = lazer.createReflexion(segment);
             console.log(lazer.reflexion);
-            this.lazers.push(lazer.reflexion);
-            this.updateLazer(lazer.reflexion);
+            if (lazer.reflexion) {
+                this.updateLazer(lazer.reflexion);
+            }
         }
+
+        return true;
     }
 
     /**
@@ -54,7 +61,7 @@ class World {
                     if (lazer.contains(point)) {
                         const dist = lazer.origin.getDistance(point);
 
-                        if (!intersection.point || (dist && dist < intersection.dist)) {
+                        if (dist && (!intersection.point || dist < intersection.dist)) {
                             return { point, segment, dist };
                         }
                     }

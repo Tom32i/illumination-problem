@@ -30,6 +30,13 @@ class Segment extends Vector {
         this.to = to;
     }
 
+    getNormal() {
+        const x = this.to.x - this.from.x;
+        const y = this.to.y - this.from.y;
+
+        return [-y, x];
+    }
+
     contains(point) {
         const { x, y } = point;
 

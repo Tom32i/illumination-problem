@@ -122,6 +122,13 @@ class Vector {
 
         return new Point(x, y);
     }
+
+    getVector(xA = 0, xB = 1) {
+        const yA = this.getY(xA);
+        const yB = this.getY(xB);
+
+        return [xB - xA, yB - yA];
+    }
 }
 
 export default Vector;
