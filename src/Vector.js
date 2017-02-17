@@ -109,6 +109,8 @@ class Vector {
             }
 
             return new Point(this.from.x, vector.getY(this.from.x));
+        } else if(vector.isVertical()) {
+            return new Point(vector.from.x, this.getY(vector.from.x));
         }
 
         const x = (vector.origin - this.origin) / (this.slope - vector.slope);

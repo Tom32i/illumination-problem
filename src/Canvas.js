@@ -77,18 +77,20 @@ class Canvas {
         context.stroke();
     }
 
-    drawShape(points, width = 5, color = 'black') {
+    drawShape(points, color = '#F5F5F5', border = 2, borderColor = 'grey') {
         const { context, scale } = this;
         const last = points[points.length - 1];
 
         context.lineJoin = 'miter';
-        context.lineWidth = width;
-        context.strokeStyle = color;
+        context.fillStyle = color;
+        context.lineWidth = border;
+        context.strokeStyle = borderColor;
 
         context.beginPath();
         context.moveTo(last.x * scale, last.y * scale);
         points.forEach(point => context.lineTo(point.x * scale, point.y * scale));
         context.closePath();
+        context.fill();
         context.stroke();
     }
 }

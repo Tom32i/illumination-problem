@@ -1,16 +1,13 @@
 import Canvas from './Canvas';
+import World from './World';
 import Layout from './Layout';
-import Lazer from './Lazer';
-import Vector from './Vector';
-import Point from './Point';
 import Debug from './Debug';
-import square from './layout/square';
-import layout from './layout/tokarsky';
+import tokarsky from './layout/tokarsky';
 
 class App {
     constructor() {
-        this.layout = new Layout(layout.source, layout.observer, layout.points);
-        this.lazers = [new Lazer(this.layout.source, 0)];
+        this.layout = new Layout(tokarsky.source, tokarsky.observer, tokarsky.points);
+        this.world = new World(this.layout);
         this.background = new Canvas();
         this.canvas = new Canvas();
         this.frame = null;
@@ -26,7 +23,13 @@ class App {
 
         window.addEventListener('resize', this.onResize);
         window.addEventListener('error', this.stop);
-        window.addEventListener('keypress', this.update);
+
+        /*const number = 24;
+
+        for (let angle = 0; angle < number; angle++) {
+            this.world.addLazer(angle * 2 * Math.PI / number);
+        }*/
+        this.world.addLazer(Math.PI / 12);
 
         this.onResize();
         this.update();
@@ -47,12 +50,10 @@ class App {
         const width = Math.round(this.layout.width * scale);
         const height = Math.round(this.layout.height * scale);
 
-
         this.background.setDimensions(width, height, scale);
         this.canvas.setDimensions(width, height, scale);
 
         this.drawLayout();
-        this.draw();
     }
 
     /**
@@ -75,12 +76,9 @@ class App {
     update() {
         this.frame = requestAnimationFrame(this.update);
 
-        const lazer = this.lazers[0];
-
-        lazer.setAngle((lazer.angle + Math.PI / 1000) % (2 * Math.PI));
-
+        //lazer.setAngle((lazer.angle + Math.PI / 1000) % (2 * Math.PI));
+        this.world.update();
         this.draw();
-        //this.stop();
     }
 
     /**
@@ -88,7 +86,7 @@ class App {
      */
     draw() {
         this.canvas.paste(this.background.element);
-        this.lazers.forEach(this.drawLazer);
+        this.world.lazers.forEach(this.drawLazer);
     }
 
     /**
@@ -96,13 +94,14 @@ class App {
      *
      * @param {Lazer} lazer
      */
-    drawLazer(lazer) {
-        const point = lazer.getClosestIntersection(this.layout.walls);
-
-        if (point) {
-            this.canvas.drawLine(lazer.origin, point, 1, 'orange');
-            this.canvas.drawCircle(point, 3, 'red');
+    drawLazer(lazer, index) {
+        if (!lazer.end) {
+            console.log(index, lazer);
+            throw new Error();
         }
+
+        this.canvas.drawLine(lazer.origin, lazer.end, 1, 'orange');
+        this.canvas.drawCircle(lazer.end, 3, 'red');
     }
 
     /**
