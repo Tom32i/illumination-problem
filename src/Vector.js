@@ -80,6 +80,11 @@ class Vector {
         return this.slope * x + this.origin;
     }
 
+    getPoint(x) {
+        console.log(x, this.getY(x));
+        return new Point(x, this.getY(x));
+    }
+
     /**
      * Is the vector vertical?
      *

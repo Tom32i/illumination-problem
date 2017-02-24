@@ -26,12 +26,11 @@ class App {
         window.addEventListener('resize', this.onResize);
         window.addEventListener('error', this.stop);
 
-        const number = 1;
+        const number = 32;
 
         for (let angle = 0; angle < number; angle++) {
-            this.world.addLazer(Math.PI / 11 + angle * Math.twoPI / number);
+            this.world.addLazer(0.1 + angle * Math.twoPI / number);
         }
-        //this.world.addLazer(Math.PI / 12);
 
         this.onResize();
         this.update();
@@ -78,7 +77,6 @@ class App {
     update() {
         this.frame = requestAnimationFrame(this.update);
 
-        //lazer.setAngle((lazer.angle + Math.PI / 1000) % (2 * Math.PI));
         this.world.update();
         this.draw();
     }
@@ -87,7 +85,7 @@ class App {
      * Draw the scene
      */
     draw() {
-        this.canvas.paste(this.background.element);
+        //this.canvas.paste(this.background.element);
         this.world.lazers.forEach(this.drawLazer);
     }
 
@@ -102,17 +100,11 @@ class App {
             throw new Error();
         }
 
-        console.log('drawLazer', lazer);
-
         this.canvas.drawLine(lazer.origin, lazer.end, 1, 'orange');
         this.canvas.drawCircle(lazer.end, 3, 'red');
 
         if (lazer.reflexion) {
             this.drawLazer(lazer.reflexion);
-        }
-
-        if (lazer.depth === 2) {
-            this.stop();
         }
     }
 

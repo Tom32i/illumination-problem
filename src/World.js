@@ -1,4 +1,5 @@
 import Lazer from './Lazer';
+import Point from './Point';
 
 /**
  * World
@@ -12,9 +13,7 @@ class World {
     }
 
     addLazer(angle) {
-        this.lazers.push(
-            new Lazer(this.layout.source, angle)
-        );
+        this.lazers.push(Lazer.createFromAngle(this.layout.source, angle));
     }
 
     update() {
@@ -22,21 +21,29 @@ class World {
     }
 
     updateLazer(lazer) {
-        if (!lazer.update()) {
+        if (lazer.depth === 0) {
+            lazer.setAngle((lazer.angle + Math.PI/100000) % Math.twoPI);
+        }
+
+        if (!lazer.changed) {
             return;
         }
+
+        lazer.changed = false;
 
         const { point, segment } = this.getClosestIntersection(lazer);
 
         if (!point || !segment) {
-            return true;
+            lazer.setEnd();
+
+            return;
         }
 
-        lazer.end = point;
+        lazer.setEnd(point);
 
         if (lazer.depth < Lazer.maxDepth) {
             lazer.reflexion = lazer.createReflexion(segment);
-            console.log(lazer.reflexion);
+
             if (lazer.reflexion) {
                 this.updateLazer(lazer.reflexion);
             }
@@ -59,9 +66,10 @@ class World {
             if (point) {
                 if (segment.contains(point)) {
                     if (lazer.contains(point)) {
-                        const dist = lazer.origin.getDistance(point);
+                        const precesion = Math.pow(10, 3);
+                        const dist = Math.round(lazer.vector.from.getDistance(point) * precesion) / precesion;
 
-                        if (dist && (!intersection.point || dist < intersection.dist)) {
+                        if (dist !== 0 && (!intersection.point || dist < intersection.dist)) {
                             return { point, segment, dist };
                         }
                     }
